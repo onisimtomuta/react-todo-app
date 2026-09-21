@@ -3,20 +3,34 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const DB_FILE = path.join(__dirname, 'db.json')
+
+const DATA_FILE = process.env.VERCEL
+  ? path.join('/tmp', 'todos.json')
+  : path.join(__dirname, 'todos.json')
 
 export function readTodos() {
-  if (!fs.existsSync(DB_FILE)) {
-    return []
-  }
-  const raw = fs.readFileSync(DB_FILE, 'utf-8')
   try {
-    return JSON.parse(raw)
+    if (!fs.existsSync(DATA_FILE)) {
+      const initialPath = path.join(__dirname, 'todos.json')
+      if (fs.existsSync(initialPath)) {
+        const initialData = fs.readFileSync(initialPath, 'utf-8')
+        fs.writeFileSync(DATA_FILE, initialData, 'utf-8')
+        return JSON.parse(initialData)
+      }
+      fs.writeFileSync(DATA_FILE, '[]', 'utf-8')
+      return []
+    }
+    const data = fs.readFileSync(DATA_FILE, 'utf-8')
+    return JSON.parse(data)
   } catch {
     return []
   }
 }
 
 export function writeTodos(todos) {
-  fs.writeFileSync(DB_FILE, JSON.stringify(todos, null, 2))
+  try {
+    fs.writeFileSync(DATA_FILE, JSON.stringify(todos, null, 2), 'utf-8')
+  } catch (err) {
+    console.error('Eroare la scriere:', err)
+  }
 }
